@@ -1,5 +1,6 @@
 import praw
 import requests
+import re
 import os
 from dotenv import load_dotenv
 
@@ -12,33 +13,60 @@ load_dotenv()
 
 ID = os.environ.get("ID")
 SECRET = os.environ.get("SECRET")
-USER = os.environ.get("USER")
+USERAGENT = os.environ.get("USERAGENT")
+PW = os.environ.get("PW")
+USERNAME = os.environ.get("USERNAME")
 
-def download_top_image(subreddit_name, output_folder="."):
+def scrape_top_of_day(sub, output_folder="./pics"):
     # Initialize the Reddit API client
     reddit = praw.Reddit(client_id=ID,
                          client_secret=SECRET,
-                         user_agent=USER)
+                         user_agent=USERAGENT,
+                         password=PW,
+                         username=USERNAME)
+    print(reddit.user.me())
+    subreddit = reddit.subreddit(sub)
+    day_tops = subreddit.top(time_filter='day', limit=10)
 
-    # Get the subreddit
-    subreddit = reddit.subreddit(subreddit_name)
+    for day_top in day_tops:
+        if day_top.url.endswith(('jpg', 'jpeg', 'png', 'gif')):
+            image_url = day_top.url
+            download_image(image_url, output_folder)
+            break
+        else:
+            print("Top post of the day does not contain an image.")
+            
+def scrape_last_posts(sub, num_posts=1, output_folder="./pics"):
+    # Initialize the Reddit API client
+    reddit = praw.Reddit(client_id=ID,
+                         client_secret=SECRET,
+                         user_agent=USERAGENT,
+                         password=PW,
+                         username=USERNAME)
+    print(reddit.user.me())
 
-    # Get the top post from the subreddit
-    top_post = subreddit.top(limit=1)
+    subreddit = reddit.subreddit(sub)
+    new_posts = subreddit.new(limit=num_posts)
+    for post in new_posts:
+        if post.url.endswith(('jpg', 'jpeg', 'png', 'gif')):
+            image_url = post.url
+            download_image(image_url, output_folder)
+            
+def clean_filename(filename):
+    # Remove invalid characters from the filename
+    return re.sub(r'[\/:*?"<>|]', '', filename)
 
-    # Get the image URL from the post
-    image_url = top_post.url
-
-    # Download the image
-    image_response = requests.get(image_url)
+def download_image(url, output_folder="\pics"):
+    os.makedirs(output_folder, exist_ok=True)
+    image_response = requests.get(url)
     if image_response.status_code == 200:
-        # Save the image locally
-        image_filename = os.path.join(output_folder, f"{subreddit_name}_top_image.jpg")
+        image_filename = os.path.join(output_folder, os.path.basename(url))
         with open(image_filename, 'wb') as image_file:
             image_file.write(image_response.content)
-        print(f"Top image downloaded and saved as {image_filename}")
+        print(f"Image downloaded and saved as {image_filename}")
     else:
-        print("Failed to download image.")
+        print(f"Failed to download image from {url}")
 
-# Example usage
-download_top_image("python")  # Replace with the desired subreddit name
+if __name__ == '__main__':
+    sub = "IllegallySmolCats"
+    scrape_top_of_day(sub)
