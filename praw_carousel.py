@@ -13,16 +13,16 @@ load_dotenv()
 ID = os.environ.get("ID")
 SECRET = os.environ.get("SECRET")
 USERAGENT = os.environ.get("USERAGENT")
-PW = os.environ.get("PW")
-USERNAME = os.environ.get("USERNAME")
+PWR = os.environ.get("PWR")
+USER = os.environ.get("USER")
 
 def scrape_carousel_images(post_url, output_folder="./pics"):
     # Initialize the Reddit API client
     reddit = praw.Reddit(client_id=ID,
                          client_secret=SECRET,
                          user_agent=USERAGENT,
-                         password=PW,
-                         username=USERNAME)
+                         password=PWR,
+                         username=USER)
     print(reddit.user.me())
     submission_id = reddit.submission(url=post_url).id
 
